@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Warframe 紫卡计算器</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23272c3d'/%3E%3Cpath d='M32 12 20 32l12 20 12-20z' fill='none' stroke='%234a9eff' stroke-width='5'/%3E%3Ccircle cx='32' cy='32' r='7' fill='%234a9eff'/%3E%3C/svg%3E">
+<style>
+*{box-sizing:border-box;font-family:system-ui,sans-serif}
+body{background:#1a1a22;color:#eee;max-width:1100px;margin:2rem auto;padding:0 1rem}
+h1{font-size:2rem;margin:0 0 1rem}
+.author{font-size:0.9rem;font-weight:400;color:#8a90a3;margin-left:0.5rem}
+.card{background:#272733;padding:1.5rem;border-radius:12px;margin-bottom:1rem}
+label{display:block;margin:0.8rem 0 0.3rem;font-size:14px;color:#c9cdd8}
+input,select{padding:8px 10px;border-radius:6px;border:none;background:#383848;color:#fff;font-size:15px}
+input[type=range]{width:100%}
+.result-line{display:grid;grid-template-columns:280px minmax(250px,1fr) 1fr;gap:12px;align-items:center;margin:10px 0;padding:8px;background:#1f1f2b;border-radius:8px}
+.info-text{font-size:14px}
+.statInfo{font-size:15px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.statMin{font-weight:700}
+.statMax{font-weight:700}
+.curInput{width:80px;padding:4px 6px;background:#383848;color:#5ad28e;font-size:16px;border:none;border-radius:6px;font-weight:600}
+.red{color:#ff7b72}
+.green{color:#5ad28e}
+.blue{color:#6fb6ff}
+.orange{color:#ffbf69}
+.controls{display:flex;flex-direction:column;gap:1.1rem}
+.ctl label{display:block;margin:0 0 0.45rem;font-size:18px;color:#c9cdd8}
+.seg{display:flex;flex-wrap:wrap;gap:6px;background:#1f1f2b;padding:6px;border-radius:10px}
+.seg button{flex:1 1 auto;min-width:86px;padding:9px 12px;background:transparent;border:1px solid transparent;border-radius:8px;color:#c9cdd8;font-size:16px;cursor:pointer;white-space:nowrap;transition:background .12s,color .12s}
+.seg button:hover{background:#2e2e3e;color:#fff}
+.seg button.active{background:#3a6ea8;color:#fff;font-weight:600}
+#statRows{margin-top:1rem}
+.neg-input{background:#482828 !important;border:1px solid #ff5555;}
+.statSearch{width:100%}
+.stat-wrap{position:relative}
+.wd-drop{position:absolute;top:calc(100% + 2px);left:0;right:0;background:#2a2a38;border:1px solid #3a3a4c;border-radius:6px;max-height:320px;overflow:auto;z-index:50;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.wd-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 10px;cursor:pointer;font-size:14px;border-bottom:1px solid rgba(255,255,255,.04)}
+.wd-item:last-child{border-bottom:none}
+.wd-item:hover,.wd-item.active{background:#3a4a5e}
+.wd-name{color:#eee}
+.sel-wrap{position:relative;min-width:160px}
+.sel-hidden{display:none}
+.sel-trigger{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;background:#383848;color:#fff;font-size:15px;border:none;border-radius:6px;cursor:pointer;text-align:left}
+.sel-trigger:hover{background:#3f3f52}
+.sel-caret{color:#9aa0b5;font-size:12px;flex:none}
+.note{font-size:16px;color:#b9bec9;margin-top:0.8rem;line-height:1.7}
+h2{font-size:1.1rem;margin:0 0 0.6rem;color:#c9cdd8}
+.summary{font-size:13px;color:#9aa0b5;font-weight:400;margin-left:0.4rem}
+table{width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed}
+th,td{padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.06);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+th{color:#9aa0b5;font-weight:600;background:#1f1f2b}
+th.t{color:#c9cdd8}
+td.name{color:#e8eaf0}
+td.t{color:#e8eaf0}
+td.s{color:#6fb6ff;font-weight:600}
+td.pos{color:#5ad28e}
+td.neg{color:#ff7b72}
+td.na{color:#4a4f5e}
+td.yes{color:#5ad28e}
+td.no{color:#4a4f5e}
+td.cur{background:#2a3a4e}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle}
+.dot.yes{background:#5ad28e}
+.dot.no{background:#4a4f5e}
+@media (max-width:720px){
+  body{margin:1rem auto}
+  .row{grid-template-columns:1fr}
+  .result-line{grid-template-columns:1fr;gap:8px}
+  input,select{font-size:16px}
+  th,td{font-size:13px;padding:6px 8px}
+}
+</style>
+</head>
+<body>
+<h1>Warframe 紫卡计算器 <span class="author">Cier</span></h1>
+<div class="card">
+  <div class="controls">
+    <div class="ctl">
+      <label>武器类型</label>
+      <div class="seg" id="typeSeg">
+        <button data-v="rifle" class="active">步枪</button>
+        <button data-v="shotgun">霰弹枪</button>
+        <button data-v="pistol">手枪</button>
+        <button data-v="archgun">Archwing 枪械</button>
+        <button data-v="melee">近战</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <label>词条组合</label>
+      <div class="seg" id="groupSeg">
+        <button data-v="2p0n" class="active">2正面 0负面</button>
+        <button data-v="2p1n">2正面 1负面</button>
+        <button data-v="3p0n">3正面 0负面</button>
+        <button data-v="3p1n">3正面 1负面</button>
+      </div>
+    </div>
+  </div>
+  <div class="note">先选武器类型与词条组合，再在搜索框输入词条名（支持中文模糊匹配），自动显示下限 / 上限；拖动浮动滑块查看当前值，或手输当前值反推浮动。</div>
+  <div id="statRows"></div>
+</div>
+
+<div class="card" id="overviewCard">
+  <div class="seg" id="sectionSeg">
+    <button data-v="range" class="active">词条范围</button>
+    <button data-v="fuse">可熔接属性</button>
+  </div>
+  <div id="rangeBody">
+    <h2>全部词条范围 <span class="summary" id="summary"></span></h2>
+    <table>
+      <colgroup><col style="width:52%"><col style="width:24%"><col style="width:24%"></colgroup>
+      <thead>
+        <tr>
+          <th>词条</th>
+          <th>下限</th>
+          <th>上限</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <div id="fuseBody" style="display:none">
+    <h2>可熔接属性 <span class="summary" id="fuseSummary"></span></h2>
+    <table>
+      <colgroup><col style="width:26%"><col style="width:26%"><col style="width:26%"><col style="width:4.4%"><col style="width:4.4%"><col style="width:4.4%"><col style="width:4.4%"><col style="width:4.4%"></colgroup>
+      <thead>
+        <tr>
+          <th class="t">词条 1</th>
+          <th class="t">词条 2</th>
+          <th class="t">熔接结果</th>
+          <th class="wk">步枪</th>
+          <th class="wk">霰弹枪</th>
+          <th class="wk">手枪</th>
+          <th class="wk">Archwing</th>
+          <th class="wk">近战</th>
+        </tr>
+      </thead>
+      <tbody id="fuseTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const statData = {
+  rifle:[
+    {name:"额外连击数几率",base:null},
+    {name:"几率不获得连击数",base:null},
+    {name:"弹药最大值",base:49.95},
+    {name:"对Corpus伤害",base:45},
+    {name:"对Grineer伤害",base:45},
+    {name:"对Infested伤害",base:45},
+    {name:"冰冻伤害",base:90},
+    {name:"连击持续时间",base:null},
+    {name:"暴击几率",base:149.99},
+    {name:"滑行攻击暴击几率",base:null},
+    {name:"暴击伤害",base:119.997},
+    {name:"基础伤害 / 近战伤害",base:165},
+    {name:"电击伤害",base:90},
+    {name:"火焰伤害",base:90},
+    {name:"处决伤害",base:null},
+    {name:"射速 / 攻击速度",base:60.03},
+    {name:"投射物飞行速度",base:90},
+    {name:"初始连击",base:null},
+    {name:"冲击伤害",base:119.97},
+    {name:"弹匣容量",base:49.995},
+    {name:"重击效率",base:null},
+    {name:"多重射击",base:90},
+    {name:"毒素伤害",base:90},
+    {name:"穿透",base:2.7},
+    {name:"穿刺伤害",base:119.997},
+    {name:"装填速度",base:49.995},
+    {name:"范围",base:null},
+    {name:"切割伤害",base:119.97},
+    {name:"触发几率",base:90},
+    {name:"触发时间",base:99.99},
+    {name:"后坐力",base:90},
+    {name:"变焦",base:59.99},
+    {name:"弹药效率",base:45},
+    {name:"爆炸伤害",base:90},
+    {name:"腐蚀伤害",base:90},
+    {name:"对Orokin伤害",base:45},
+    {name:"对科腐者伤害",base:45},
+    {name:"对炽蛇军伤害",base:45},
+    {name:"毒气伤害",base:90},
+    {name:"重击蓄力速度",base:null},
+    {name:"磁力伤害",base:90},
+    {name:"重击近战伤害",base:null},
+    {name:"格挡角度",base:null},
+    {name:"辐射伤害",base:90},
+    {name:"收枪装填",base:90},
+    {name:"砸地伤害",base:null},
+    {name:"状态伤害",base:90},
+    {name:"病毒伤害",base:90},
+    {name:"弱点伤害",base:225},
+    {name:"弱点暴击率",base:247.5},
+  ],
+  shotgun:[
+    {name:"额外连击数几率",base:null},
+    {name:"几率不获得连击数",base:null},
+    {name:"弹药最大值",base:90},
+    {name:"对Corpus伤害",base:45},
+    {name:"对Grineer伤害",base:45},
+    {name:"对Infested伤害",base:45},
+    {name:"冰冻伤害",base:90},
+    {name:"连击持续时间",base:null},
+    {name:"暴击几率",base:90},
+    {name:"滑行攻击暴击几率",base:null},
+    {name:"暴击伤害",base:90},
+    {name:"基础伤害 / 近战伤害",base:164.7},
+    {name:"电击伤害",base:90},
+    {name:"火焰伤害",base:90},
+    {name:"处决伤害",base:null},
+    {name:"射速 / 攻击速度",base:90},
+    {name:"投射物飞行速度",base:90},
+    {name:"初始连击",base:null},
+    {name:"冲击伤害",base:119.97},
+    {name:"弹匣容量",base:49.995},
+    {name:"重击效率",base:null},
+    {name:"多重射击",base:119.7},
+    {name:"毒素伤害",base:90},
+    {name:"穿透",base:2.7},
+    {name:"穿刺伤害",base:119.997},
+    {name:"装填速度",base:49.995},
+    {name:"范围",base:null},
+    {name:"切割伤害",base:119.97},
+    {name:"触发几率",base:90},
+    {name:"触发时间",base:99.99},
+    {name:"后坐力",base:90},
+    {name:"变焦",base:41.994},
+    {name:"弹药效率",base:45},
+    {name:"爆炸伤害",base:90},
+    {name:"腐蚀伤害",base:90},
+    {name:"对Orokin伤害",base:45},
+    {name:"对科腐者伤害",base:45},
+    {name:"对炽蛇军伤害",base:45},
+    {name:"毒气伤害",base:90},
+    {name:"重击蓄力速度",base:null},
+    {name:"磁力伤害",base:90},
+    {name:"重击近战伤害",base:null},
+    {name:"格挡角度",base:null},
+    {name:"辐射伤害",base:90},
+    {name:"收枪装填",base:90},
+    {name:"砸地伤害",base:null},
+    {name:"状态伤害",base:90},
+    {name:"病毒伤害",base:90},
+    {name:"弱点伤害",base:225},
+    {name:"弱点暴击率",base:247.5},
+  ],
+  pistol:[
+    {name:"额外连击数几率",base:null},
+    {name:"几率不获得连击数",base:null},
+    {name:"弹药最大值",base:90},
+    {name:"对Corpus伤害",base:45},
+    {name:"对Grineer伤害",base:45},
+    {name:"对Infested伤害",base:45},
+    {name:"冰冻伤害",base:90},
+    {name:"连击持续时间",base:null},
+    {name:"暴击几率",base:149.99},
+    {name:"滑行攻击暴击几率",base:null},
+    {name:"暴击伤害",base:90},
+    {name:"基础伤害 / 近战伤害",base:219.6},
+    {name:"电击伤害",base:90},
+    {name:"火焰伤害",base:90},
+    {name:"处决伤害",base:null},
+    {name:"射速 / 攻击速度",base:74.7},
+    {name:"投射物飞行速度",base:90},
+    {name:"初始连击",base:null},
+    {name:"冲击伤害",base:119.97},
+    {name:"弹匣容量",base:49.995},
+    {name:"重击效率",base:null},
+    {name:"多重射击",base:119.7},
+    {name:"毒素伤害",base:90},
+    {name:"穿透",base:2.7},
+    {name:"穿刺伤害",base:119.997},
+    {name:"装填速度",base:49.995},
+    {name:"范围",base:null},
+    {name:"切割伤害",base:119.97},
+    {name:"触发几率",base:90},
+    {name:"触发时间",base:99.99},
+    {name:"后坐力",base:90},
+    {name:"变焦",base:80.1},
+    {name:"弹药效率",base:45},
+    {name:"爆炸伤害",base:90},
+    {name:"腐蚀伤害",base:90},
+    {name:"对Orokin伤害",base:45},
+    {name:"对科腐者伤害",base:45},
+    {name:"对炽蛇军伤害",base:45},
+    {name:"毒气伤害",base:90},
+    {name:"重击蓄力速度",base:null},
+    {name:"磁力伤害",base:90},
+    {name:"重击近战伤害",base:null},
+    {name:"格挡角度",base:null},
+    {name:"辐射伤害",base:90},
+    {name:"收枪装填",base:90},
+    {name:"砸地伤害",base:null},
+    {name:"状态伤害",base:90},
+    {name:"病毒伤害",base:90},
+    {name:"弱点伤害",base:225},
+    {name:"弱点暴击率",base:247.5},
+  ],
+  archgun:[
+    {name:"额外连击数几率",base:null},
+    {name:"几率不获得连击数",base:null},
+    {name:"弹药最大值",base:99.9},
+    {name:"对Corpus伤害",base:45},
+    {name:"对Grineer伤害",base:45},
+    {name:"对Infested伤害",base:45},
+    {name:"冰冻伤害",base:119.7},
+    {name:"连击持续时间",base:null},
+    {name:"暴击几率",base:99.9},
+    {name:"滑行攻击暴击几率",base:null},
+    {name:"暴击伤害",base:80.1},
+    {name:"基础伤害 / 近战伤害",base:99.9},
+    {name:"电击伤害",base:119.7},
+    {name:"火焰伤害",base:119.7},
+    {name:"处决伤害",base:null},
+    {name:"射速 / 攻击速度",base:60.03},
+    {name:"投射物飞行速度",base:null},
+    {name:"初始连击",base:null},
+    {name:"冲击伤害",base:90},
+    {name:"弹匣容量",base:60.3},
+    {name:"重击效率",base:null},
+    {name:"多重射击",base:60.3},
+    {name:"毒素伤害",base:119.7},
+    {name:"穿透",base:2.7},
+    {name:"穿刺伤害",base:90},
+    {name:"装填速度",base:99.9},
+    {name:"范围",base:null},
+    {name:"切割伤害",base:90},
+    {name:"触发几率",base:60.3},
+    {name:"触发时间",base:99.99},
+    {name:"后坐力",base:90},
+    {name:"变焦",base:59.99},
+    {name:"弹药效率",base:45},
+    {name:"爆炸伤害",base:90},
+    {name:"腐蚀伤害",base:90},
+    {name:"对Orokin伤害",base:45},
+    {name:"对科腐者伤害",base:45},
+    {name:"对炽蛇军伤害",base:45},
+    {name:"毒气伤害",base:90},
+    {name:"重击蓄力速度",base:null},
+    {name:"磁力伤害",base:90},
+    {name:"重击近战伤害",base:null},
+    {name:"格挡角度",base:null},
+    {name:"辐射伤害",base:90},
+    {name:"收枪装填",base:null},
+    {name:"砸地伤害",base:null},
+    {name:"状态伤害",base:90},
+    {name:"病毒伤害",base:90},
+    {name:"弱点伤害",base:225},
+    {name:"弱点暴击率",base:247.5},
+  ],
+  melee:[
+    {name:"额外连击数几率",base:58.77},
+    {name:"几率不获得连击数",base:104.85},
+    {name:"弹药最大值",base:null},
+    {name:"对Corpus伤害",base:45},
+    {name:"对Grineer伤害",base:45},
+    {name:"对Infested伤害",base:45},
+    {name:"冰冻伤害",base:90},
+    {name:"连击持续时间",base:8.1},
+    {name:"暴击几率",base:180},
+    {name:"滑行攻击暴击几率",base:120},
+    {name:"暴击伤害",base:90},
+    {name:"基础伤害 / 近战伤害",base:164.7},
+    {name:"电击伤害",base:90},
+    {name:"火焰伤害",base:90},
+    {name:"处决伤害",base:119.7},
+    {name:"射速 / 攻击速度",base:54.9},
+    {name:"投射物飞行速度",base:null},
+    {name:"初始连击",base:24.5},
+    {name:"冲击伤害",base:119.7},
+    {name:"弹匣容量",base:null},
+    {name:"重击效率",base:73.44},
+    {name:"多重射击",base:null},
+    {name:"毒素伤害",base:90},
+    {name:"穿透",base:null},
+    {name:"穿刺伤害",base:119.997},
+    {name:"装填速度",base:null},
+    {name:"范围",base:1.94},
+    {name:"切割伤害",base:119.7},
+    {name:"触发几率",base:90},
+    {name:"触发时间",base:99.99},
+    {name:"后坐力",base:null},
+    {name:"变焦",base:null},
+    {name:"弹药效率",base:null},
+    {name:"爆炸伤害",base:90},
+    {name:"腐蚀伤害",base:90},
+    {name:"对Orokin伤害",base:45},
+    {name:"对科腐者伤害",base:45},
+    {name:"对炽蛇军伤害",base:45},
+    {name:"毒气伤害",base:90},
+    {name:"重击蓄力速度",base:119.7},
+    {name:"磁力伤害",base:90},
+    {name:"重击近战伤害",base:119.7},
+    {name:"格挡角度",base:81},
+    {name:"辐射伤害",base:90},
+    {name:"收枪装填",base:null},
+    {name:"砸地伤害",base:119.7},
+    {name:"状态伤害",base:90},
+    {name:"病毒伤害",base:90},
+    {name:"弱点伤害",base:null},
+    {name:"弱点暴击率",base:null},
+  ],
+};
+
+const groupCoeff = {
+  "2p0n":{pos:0.99,neg:0,count:{pos:2,neg:0}},
+  "2p1n":{pos:1.2375,neg:-0.495,count:{pos:2,neg:1}},
+  "3p0n":{pos:0.75,neg:0,count:{pos:3,neg:0}},
+  "3p1n":{pos:0.9375,neg:-0.75,count:{pos:3,neg:1}}
+};
+
+// 倾向统一固定为 1.2
+const DISP = 1.2;
+
+const customSelects = [];
+function upgradeSelect(sel){
+  const wrap = document.createElement('div');
+  wrap.className = 'sel-wrap';
+  sel.parentNode.insertBefore(wrap, sel);
+  wrap.appendChild(sel);
+  sel.classList.add('sel-hidden');
+  const trigger = document.createElement('button');
+  trigger.type = 'button';
+  trigger.className = 'sel-trigger';
+  const label = document.createElement('span');
+  label.className = 'sel-label';
+  const caret = document.createElement('span');
+  caret.className = 'sel-caret';
+  caret.textContent = '▾';
+  trigger.appendChild(label);
+  trigger.appendChild(caret);
+  wrap.appendChild(trigger);
+  const drop = document.createElement('div');
+  drop.className = 'wd-drop';
+  drop.hidden = true;
+  wrap.appendChild(drop);
+  function buildOptions(){
+    drop.innerHTML = Array.from(sel.options).map(o=>
+      `<div class="wd-item" data-val="${escHtml(o.value)}"><span class="wd-name">${escHtml((o.textContent||'').trim())}</span></div>`
+    ).join('');
+  }
+  function refresh(){
+    label.textContent = sel.selectedOptions && sel.selectedOptions[0] ? (sel.selectedOptions[0].textContent||'').trim() : '';
+  }
+  buildOptions();
+  refresh();
+  trigger.addEventListener('click', e=>{ e.stopPropagation(); drop.hidden = !drop.hidden; });
+  drop.addEventListener('mousedown', e=>e.preventDefault());
+  drop.addEventListener('click', e=>{
+    const el = e.target.closest('.wd-item');
+    if(!el) return;
+    sel.value = el.dataset.val;
+    sel.dispatchEvent(new Event('change', {bubbles:true}));
+    refresh();
+    drop.hidden = true;
+  });
+  document.addEventListener('click', e=>{ if(!wrap.contains(e.target)) drop.hidden = true; });
+  customSelects.push({sel, refresh});
+}
+function refreshCustomSelects(){ customSelects.forEach(u=>u.refresh()); }
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+let stateGroup = '2p0n';
+let stateType = 'rifle';
+const $statRows = document.getElementById('statRows');
+
+function bindSeg(segId, setter, onChange){
+  const seg = document.getElementById(segId);
+  seg.addEventListener('click', e=>{
+    const btn = e.target.closest('button[data-v]');
+    if(!btn) return;
+    seg.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    setter(btn.dataset.v);
+    if(onChange) onChange();
+  });
+}
+
+function renderRows(){
+  const gKey = stateGroup;
+  const group = groupCoeff[gKey];
+  const posCount = group.count.pos;
+  const negCount = group.count.neg;
+  let html = "";
+  for(let i=0;i<posCount;i++){
+    html += `
+    <div class="result-line" data-type="pos">
+      <div class="stat-wrap">
+        <input class="statSearch" placeholder="输入词条名…" autocomplete="off">
+        <div class="wd-drop" hidden></div>
+      </div>
+      <div class="info-text statInfo">
+        <span class="blue">下限</span><span class="statMin">--</span> |
+        <span class="orange">上限</span><span class="statMax">--</span> |
+        <span class="green">当前</span><input class="curInput" type="number" step="0.01" placeholder="手输" title="手动输入当前值可反推浮动系数">
+      </div>
+      <div>
+        <input type="range" class="floatSlider" min="0.9" max="1.1" step="0.001" value="1.0">
+        <div style="text-align:right;font-size:16px" class="floatLabel">浮动:0.0%</div>
+      </div>
+    </div>`;
+  }
+  for(let i=0;i<negCount;i++){
+    html += `
+    <div class="result-line" data-type="neg">
+      <div class="stat-wrap">
+        <input class="statSearch neg-input" placeholder="输入负面词条名…" autocomplete="off">
+        <div class="wd-drop" hidden></div>
+      </div>
+      <div class="info-text statInfo">
+        <span class="blue">下限</span><span class="statMin">--</span> |
+        <span class="orange">上限</span><span class="statMax">--</span> |
+        <span class="green">当前</span><input class="curInput" type="number" step="0.01" placeholder="手输" title="手动输入当前值可反推浮动系数">
+      </div>
+      <div>
+        <input type="range" class="floatSlider" min="0.9" max="1.1" step="0.001" value="1.0">
+        <div style="text-align:right;font-size:16px" class="floatLabel">浮动:0.0%</div>
+      </div>
+    </div>`;
+  }
+  $statRows.innerHTML = html;
+  bindRowEvents();
+  calcAll();
+  refreshCustomSelects();
+  renderAllRange();
+  renderFuse();
+}
+
+const MERGE_GROUPS = [
+  {label:"对阵营伤害", note:"Corpus / Grineer / Infested / Orokin / 科腐者 / 炽蛇军",
+   members:["对Corpus伤害","对Grineer伤害","对Infested伤害","对Orokin伤害","对科腐者伤害","对炽蛇军伤害"]},
+  {label:"元素伤害", note:"冰冻 / 电击 / 火焰 / 毒素 / 爆炸 / 腐蚀 / 毒气 / 磁力 / 辐射 / 病毒",
+   members:["冰冻伤害","电击伤害","火焰伤害","毒素伤害","爆炸伤害","腐蚀伤害","毒气伤害","磁力伤害","辐射伤害","病毒伤害"],
+   subtypes:[
+     {name:"单元素伤害", members:["冰冻伤害","电击伤害","火焰伤害","毒素伤害"]},
+     {name:"复合元素伤害", members:["爆炸伤害","腐蚀伤害","毒气伤害","磁力伤害","辐射伤害","病毒伤害"]}
+   ]}
+];
+const $tbody = document.getElementById('tbody');
+const $summary = document.getElementById('summary');
+
+function renderAllRange(){
+  const group = groupCoeff[stateGroup];
+  const all = statData[stateType];
+  const usable = all.filter(s=>s.base!==null);
+  const used = new Set();
+  let rows = '';
+  function fmt(x){
+    if(x === null) return '<span class="na">—</span>';
+    const cls = x < 0 ? 'neg' : 'pos';
+    return '<span class="'+cls+'">'+x.toFixed(1)+'</span>';
+  }
+  function addRow(name, base){
+    const posMin = base * group.pos * DISP * 0.9;
+    const posMax = base * group.pos * DISP * 1.1;
+    rows += '<tr><td class="name" title="'+name+'">'+name+'</td>'+
+      '<td>'+fmt(posMin)+'</td><td>'+fmt(posMax)+'</td></tr>';
+  }
+  for(const g of MERGE_GROUPS){
+    const avail = g.members.filter(n=>{ const s=all.find(x=>x.name===n); return s && s.base!==null; });
+    if(!avail.length) continue;
+    const byBase = {};
+    for(const n of avail){ const s=all.find(x=>x.name===n); const k=String(s.base); (byBase[k]=byBase[k]||{base:s.base,names:[]}).names.push(n); }
+    const keys = Object.keys(byBase);
+    if(keys.length===1){ used.add(g.label); addRow(g.label, byBase[keys[0]].base); }
+    else if(g.subtypes){
+      // 子类型内 base 一致则用简短子类型名；不一致再按 base 细分
+      for(const st of g.subtypes){
+        const stAvail = st.members.filter(n=>{ const s=all.find(x=>x.name===n); return s && s.base!==null; });
+        if(!stAvail.length) continue;
+        const stBase = stAvail.map(n=>all.find(x=>x.name===n).base);
+        const distinct = [...new Set(stBase.map(String))];
+        if(distinct.length===1){ used.add(st.name); addRow(st.name, stBase[0]); }
+        else { for(const k of distinct){ used.add(st.name+'·'+k); addRow(st.name+' · '+k, parseFloat(k)); } }
+      }
+    }
+    else { for(const k of keys){ const b=byBase[k]; const nm=g.label+' · '+b.names.join(' / '); used.add(nm); addRow(nm, b.base); } }
+  }
+  for(const s of usable){
+    if(used.has(s.name) || MERGE_GROUPS.some(g=>g.members.includes(s.name))) continue;
+    addRow(s.name, s.base);
+  }
+  $tbody.innerHTML = rows;
+  const rowCount = rows.split('</tr>').filter(x=>x.trim()).length;
+  $summary.textContent = '（共 '+usable.length+' 条可出词条，已合并为 '+rowCount+' 行）';
+}
+
+const FUSE_ROWS = [
+ {t1:"弹匣容量",t2:"装填速度",s:"弹药效率",ok:[1,1,1,1,0]},
+ {t1:"武器后坐力",t2:"最大弹药",s:"弹药效率",ok:[1,1,1,1,0]},
+ {t1:"火焰伤害",t2:"冰冻伤害",s:"爆炸伤害",ok:[1,1,1,1,1]},
+ {t1:"毒素伤害",t2:"电击伤害",s:"腐蚀伤害",ok:[1,1,1,1,1]},
+ {t1:"对 Grineer 伤害",t2:"对 Corpus 伤害",s:"对 Orokin 伤害",ok:[1,1,1,1,1]},
+ {t1:"对 Infested 伤害",t2:"对 Grineer 伤害",s:"对科腐者伤害",ok:[1,1,1,1,1]},
+ {t1:"对 Corpus 伤害",t2:"对 Infested 伤害",s:"对炽蛇军伤害",ok:[1,1,1,1,1]},
+ {t1:"毒素伤害",t2:"火焰伤害",s:"毒气伤害",ok:[1,1,1,1,1]},
+ {t1:"重击效率",t2:"连击持续时间",s:"重击蓄力速度",ok:[0,0,0,0,1]},
+ {t1:"电击伤害",t2:"冰冻伤害",s:"磁力伤害",ok:[1,1,1,1,1]},
+ {t1:"重击效率",t2:"额外连击数几率",s:"重击时近战伤害",ok:[0,0,0,0,1]},
+ {t1:"攻击速度",t2:"范围",s:"招架角度",ok:[0,0,0,0,1]},
+ {t1:"火焰伤害",t2:"电击伤害",s:"辐射伤害",ok:[1,1,1,1,1]},
+ {t1:"最大弹药",t2:"装填速度",s:"收起时装填",ok:[1,1,1,0,0]},
+ {t1:"最大弹药",t2:"弹匣容量",s:"收起时装填",ok:[1,1,1,0,0]},
+ {t1:"近战伤害",t2:"攻击速度",s:"震地攻击伤害",ok:[0,0,0,0,1]},
+ {t1:"基础伤害 / 近战伤害",t2:"触发几率",s:"状态伤害",ok:[1,1,1,1,1]},
+ {t1:"毒素伤害",t2:"冰冻伤害",s:"病毒伤害",ok:[1,1,1,1,1]},
+ {t1:"暴击几率",t2:"变焦",s:"弱点暴击几率",ok:[1,1,1,1,0]},
+ {t1:"暴击几率",t2:"多重射击",s:"弱点暴击几率",ok:[1,1,1,1,0]},
+ {t1:"基础伤害",t2:"变焦",s:"弱点伤害",ok:[1,1,1,1,0]}
+];
+const FUSE_WNAMES = ["步枪","霰弹枪","手枪","Archwing 枪械","近战"];
+const TYPE_IDX = {rifle:0, shotgun:1, pistol:2, archgun:3, melee:4};
+const FUSE_ELEM = new Set(["爆炸伤害","腐蚀伤害","毒气伤害","磁力伤害","辐射伤害","病毒伤害"]);
+const FUSE_ORDER = FUSE_ROWS.filter(r=>!FUSE_ELEM.has(r.s)).concat(FUSE_ROWS.filter(r=>FUSE_ELEM.has(r.s)));
+const $fuseTbody = document.getElementById('fuseTbody');
+const $fuseSummary = document.getElementById('fuseSummary');
+
+function renderFuse(){
+  const idx = TYPE_IDX[stateType];
+  let html = '';
+  for(const rw of FUSE_ORDER){
+    html += '<tr><td class="t">'+rw.t1+'</td><td class="t">'+rw.t2+'</td><td class="s">'+rw.s+'</td>';
+    for(let i=0;i<5;i++){
+      const cls = rw.ok[i] ? 'yes' : 'no';
+      const cur = i===idx ? ' cur' : '';
+      const tip = FUSE_WNAMES[i] + (rw.ok[i] ? '：可熔接' : '：不可熔接');
+      html += '<td class="'+cls+cur+'" title="'+tip+'"><span class="dot '+cls+'"></span></td>';
+    }
+    html += '</tr>';
+  }
+  $fuseTbody.innerHTML = html;
+  const n = FUSE_ROWS.filter(r=>r.ok[idx]).length;
+  $fuseSummary.textContent = '（'+FUSE_WNAMES[idx]+'：共 '+n+' 组可熔接）';
+}
+
+function resolveStat(input){
+  const row = input.closest('.result-line');
+  const list = statData[stateType].filter(s=>s.base!==null);
+  const q = input.value.trim();
+  if(!q){ row.dataset.base = ""; calcAll(); return; }
+  let s = list.find(x=>x.name===q);
+  if(!s) s = list.find(x=>x.name.toLowerCase().startsWith(q.toLowerCase()));
+  if(s){ row.dataset.base = s.base; input.value = s.name; }
+  else { row.dataset.base = ""; }
+  calcAll();
+}
+
+function wireStatSearch(input){
+  const wrap = input.parentNode;
+  const drop = wrap.querySelector('.wd-drop');
+  let curIdx = -1;
+  const statList = ()=> statData[stateType].filter(s=>s.base!==null);
+  function render(q){
+    q = (q||'').trim().toLowerCase();
+    const arr = q ? statList().filter(s=>s.name.toLowerCase().includes(q)).slice(0,15) : statList().slice(0,15);
+    curIdx = -1;
+    if(!arr.length){ drop.hidden = true; return; }
+    drop.innerHTML = arr.map(s=>`<div class="wd-item" data-name="${escHtml(s.name)}"><span class="wd-name">${escHtml(s.name)}</span></div>`).join('');
+    drop.hidden = false;
+  }
+  function choose(name){ input.value = name; resolveStat(input); drop.hidden = true; }
+  function highlight(items){ items.forEach((el,i)=>el.classList.toggle('active', i===curIdx)); }
+  input.addEventListener('input', ()=>render(input.value));
+  input.addEventListener('change', ()=>resolveStat(input));
+  drop.addEventListener('mousedown', e=>e.preventDefault());
+  drop.addEventListener('click', e=>{ const el=e.target.closest('.wd-item'); if(el) choose(el.dataset.name); });
+  input.addEventListener('keydown', e=>{
+    if(e.key==='Escape'){ drop.hidden = true; return; }
+    if(drop.hidden){ if(e.key==='Enter') resolveStat(input); return; }
+    const items = drop.querySelectorAll('.wd-item');
+    if(!items.length) return;
+    if(e.key==='ArrowDown'){ e.preventDefault(); curIdx = curIdx<0?0:(curIdx+1)%items.length; highlight(items); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); curIdx = curIdx<=0?items.length-1:curIdx-1; highlight(items); }
+    else if(e.key==='Enter'){ e.preventDefault(); const n=curIdx>=0?curIdx:0; choose(items[n].dataset.name); }
+  });
+  input.addEventListener('blur', ()=>{ setTimeout(()=>{ drop.hidden = true; }, 120); });
+}
+
+function bindRowEvents(){
+  $statRows.querySelectorAll('.statSearch').forEach(s=>wireStatSearch(s));
+  $statRows.querySelectorAll('.floatSlider').forEach(s=>s.addEventListener('input',calcAll));
+  $statRows.querySelectorAll('.curInput').forEach(c=>{
+    c.addEventListener('input',()=>backComputeFloat(c));
+    c.addEventListener('change',()=>{ const v=parseFloat(c.value); if(!isNaN(v)) c.value=v.toFixed(1); backComputeFloat(c); });
+  });
+}
+
+function setFloatLabel(row, f){
+  const label = row.querySelector('.floatLabel');
+  const pct = (f - 1.0) * 100;
+  label.className = 'floatLabel ' + (pct < 0 ? 'red' : 'green');
+  label.textContent = `浮动:${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
+}
+
+function calcAll(){
+  const gKey = stateGroup;
+  const group = groupCoeff[gKey];
+  const rows = $statRows.querySelectorAll('.result-line');
+  rows.forEach(row=>{
+    const type = row.dataset.type;
+    const slider = row.querySelector('.floatSlider');
+    const minBox = row.querySelector('.statMin');
+    const maxBox = row.querySelector('.statMax');
+    const curInput = row.querySelector('.curInput');
+    const float = parseFloat(slider.value);
+    setFloatLabel(row, float);
+    const base = parseFloat(row.dataset.base);
+    if(isNaN(base)){
+      minBox.className = 'statMin'; minBox.textContent = "--";
+      maxBox.className = 'statMax'; maxBox.textContent = "--";
+      curInput.value = ""; curInput.style.color = '';
+      return;
+    }
+    const coeff = type === "pos" ? group.pos : group.neg;
+    const valMin = base * coeff * DISP * 0.9;
+    const valMax = base * coeff * DISP * 1.1;
+    const current = base * coeff * DISP * float;
+    minBox.className = 'statMin blue';
+    maxBox.className = 'statMax orange';
+    minBox.textContent = valMin.toFixed(1);
+    maxBox.textContent = valMax.toFixed(1);
+    curInput.value = current.toFixed(1);
+    curInput.style.color = '#5ad28e';
+  });
+}
+
+function backComputeFloat(input){
+  const row = input.closest('.result-line');
+  const base = parseFloat(row.dataset.base);
+  if(isNaN(base)) return;
+  const gKey = stateGroup;
+  const group = groupCoeff[gKey];
+  const coeff = row.dataset.type === "pos" ? group.pos : group.neg;
+  const denom = base * coeff * DISP;
+  if(!denom) return;
+  const entered = parseFloat(input.value);
+  if(isNaN(entered)) return;
+  input.style.color = '#5ad28e';
+  let f = entered / denom;
+  f = Math.min(1.1, Math.max(0.9, f));
+  row.querySelector('.floatSlider').value = f;
+  setFloatLabel(row, f);
+}
+
+bindSeg('typeSeg', v=>{stateType=v;}, renderRows);
+bindSeg('groupSeg', v=>{stateGroup=v;}, renderRows);
+bindSeg('sectionSeg', v=>{
+  document.getElementById('rangeBody').style.display = v==='range' ? '' : 'none';
+  document.getElementById('fuseBody').style.display = v==='fuse' ? '' : 'none';
+});
+renderRows();
+</script>
+</body>
+</html>
