@@ -1,5 +1,5 @@
 # Warframe Riven Calculator
-> 非官方紫卡计算器，用于快速计算、评估紫卡属性
+> 非官方紫卡计算器，用于快速计算、评估紫卡属性与词条范围预览
 
 🔗 在线地址：https://cierrr.github.io/wf-riven-calc/
 
